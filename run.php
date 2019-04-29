@@ -15,23 +15,24 @@ if(empty($_GET) && file_exists('./index.html')){
 //配置要生成数据字典的数据库start=======================================================================
 ini_set( 'display_errors', 0 );
 set_time_limit(300);
+
+
 $link=array(
     array(
         'dbserver'   => "127.0.0.1",
-        'dbusername' => "youruser",
-        'dbpassword' => "yourpw",
-        'database'   => 'yourdb',
-        'title' => '数据库一',
+        'dbusername' => "xxx",
+        'dbpassword' => "xxx",
+        'database'   => 'xxx',
+        'title' => 'xxx',
     ),
-  
-   
-     array(
-        'dbserver'   => "127.0.0.1",
-        'dbusername' => "youruser",
-        'dbpassword' => "yourpw",
-        'database'   => 'yourdb',
-        'title' => '数据库二',
-    ),
+    
+    //  array(
+    //     'dbserver'   => "127.0.0.1",
+    //     'dbusername' => "youruser",
+    //     'dbpassword' => "yourpw",
+    //     'database'   => 'yourdb',
+    //     'title' => '数据库二',
+    // ),
     
 );
 //配置要生成数据字典的数据库end=======================================================================
@@ -45,25 +46,35 @@ foreach ($link as $value) {
 }
 $gourl.='</div>';
 function zd($dbserver,$dbusername,$dbpassword,$database,$title,$gourl_height){
-    $mysql_conn = @mysql_connect("$dbserver", "$dbusername", "$dbpassword") or die("Mysql connect is error.");
-    mysql_select_db($database, $mysql_conn);
-    mysql_query('SET NAMES utf8', $mysql_conn);
-    $table_result = mysql_query('show tables', $mysql_conn);
-    //取得所有的表名
-    while ($row = mysql_fetch_array($table_result)) {
-        $tables[]['TABLE_NAME'] = $row[0];
+
+    $mysql_conn=new mysqli("$dbserver","$dbusername","$dbpassword","$database");
+
+
+    $mysql_conn->query('SET NAMES utf8');
+    $table_result = $mysql_conn->query('show tables');
+    while($row = $table_result->fetch_assoc()){
+        $rows[] = $row;
     }
 
+    foreach($rows as $k=>$v){  
+        $tmp = array_values($v);
+        $tables[]['TABLE_NAME'] = $tmp[0];
+    }
+
+   
     //循环取得所有表的备注
     foreach ($tables AS $k=>$v) {
         $sql  = 'SELECT * FROM ';
         $sql .= 'INFORMATION_SCHEMA.TABLES ';
         $sql .= 'WHERE ';
         $sql .= "table_name = '{$v['TABLE_NAME']}'  AND table_schema = '{$database}'";
-        $table_result = mysql_query($sql, $mysql_conn);
-        while ($t = mysql_fetch_assoc($table_result) ) {
+
+        $table_result = $mysql_conn->query($sql);
+
+        while($t = $table_result->fetch_assoc()){
             $tables[$k]['TABLE_COMMENT'] = $t['TABLE_COMMENT'];
         }
+
 
         $sql  = 'SELECT * FROM ';
         $sql .= 'INFORMATION_SCHEMA.COLUMNS ';
@@ -71,15 +82,16 @@ function zd($dbserver,$dbusername,$dbpassword,$database,$title,$gourl_height){
         $sql .= "table_name = '{$v['TABLE_NAME']}' AND table_schema = '{$database}'";
 
         $fields = array();
-        $field_result = mysql_query($sql, $mysql_conn);
-        while ($t = mysql_fetch_array($field_result) ) {
+
+
+        $field_result = $mysql_conn->query($sql);
+        while ($t = $field_result->fetch_assoc() ) {
             $fields[] = $t;
         }
+
         $tables[$k]['COLUMN'] = $fields;
     }
-    mysql_close($mysql_conn);
-
-
+ 
     $html = '';
     //循环所有表
     foreach ($tables AS $k=>$v) {
